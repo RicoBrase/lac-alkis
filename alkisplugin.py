@@ -9,6 +9,12 @@
     Date                 : September 2012
     Copyright            : (C) 2012-2025 by Jürgen Fischer
     Email                : jef at norbit dot de
+
+    Modifications:
+    ---------------------
+    Date                 : January 2026
+    Copyright            : (C) 2026 by Rico Brase
+    Email                : rico dot brase at lachendorf dot de
 ***************************************************************************
 *                                                                         *
 *   This program is free software; you can redistribute it and/or modify  *
@@ -104,7 +110,10 @@ if qgisAvailable:
     except ImportError:
         pass
 
-    from .qgisclasses import About, ALKISPointInfo, ALKISPolygonInfo, ALKISOwnerInfo, ALKISSearch, ALKISConf
+    from .qgisclasses import About, ALKISPointInfo, ALKISPolygonInfo, ALKISOwnerInfo, ALKISSelectPlotTool, ALKISSearch, ALKISConf
+    from .flurstueck import Flurstueck
+    from .kataloge import Bundesland, Regierungsbezirk, KreisRegion, Gemeinde, Gemarkung, Dienststelle
+    from .xlsxexporter import XLSXExporter
 
 try:
     import win32api
@@ -120,6 +129,8 @@ try:
     mapscriptAvailable = True
 except ImportError:
     mapscriptAvailable = False
+
+import datetime, os
 
 
 def qDebug(s):
@@ -1004,8 +1015,8 @@ class alkisplugin(QObject):
             self.PolygonGeometry = QgsWkbTypes.PolygonGeometry
 
     def initGui(self):
-        self.toolbar = self.iface.addToolBar(u"norGIS: ALKIS")
-        self.toolbar.setObjectName("norGIS_ALKIS_Toolbar")
+        self.toolbar = self.iface.addToolBar(u"LAC-ALKIS")
+        self.toolbar.setObjectName("LAC_ALKIS_Toolbar")
 
         self.importAction = QAction(QIcon("alkis:logo.svg"), "Layer einbinden", self.iface.mainWindow())
         self.importAction.setWhatsThis("ALKIS-Layer einbinden")
@@ -1020,20 +1031,31 @@ class alkisplugin(QObject):
         else:
             self.umnAction = None
 
-        self.searchAction = QAction(QIcon("alkis:find.svg"), u"Suchen…", self.iface.mainWindow())
+        self.searchAction = QAction(QIcon("alkis:find.svg"), u"ALKIS: Suchen…", self.iface.mainWindow())
         self.searchAction.setWhatsThis("ALKIS-Beschriftung suchen")
         self.searchAction.setStatusTip("ALKIS-Beschriftung suchen")
         self.searchAction.triggered.connect(self.search)
         self.toolbar.addAction(self.searchAction)
 
-        self.queryOwnerAction = QAction(QIcon("alkis:eigner.svg"), u"Flurstücksnachweis", self.iface.mainWindow())
+        self.selectAction = QAction(QIcon("alkis:select.svg"), u"ALKIS: Flurstücke auswählen", self.iface.mainWindow())
+        self.selectAction.triggered.connect(self.setSelectPlotTool)
+        self.selectAction.setCheckable(True)
+        self.toolbar.addAction(self.selectAction)
+        self.selectPlotTool = ALKISSelectPlotTool(self)
+        self.selectPlotTool.setAction(self.selectAction)
+
+        self.exportOwnerAction = QAction(QIcon("alkis:eigner_export.svg"), u"ALKIS: Export als XLSX für KKG", self.iface.mainWindow())
+        self.exportOwnerAction.triggered.connect(self.exportHighlightedAsXlsx)
+        self.toolbar.addAction(self.exportOwnerAction)
+
+        self.queryOwnerAction = QAction(QIcon("alkis:eigner.svg"), u"ALKIS: Flurstücksnachweis", self.iface.mainWindow())
         self.queryOwnerAction.triggered.connect(self.setQueryOwnerTool)
         self.queryOwnerAction.setCheckable(True)
         self.toolbar.addAction(self.queryOwnerAction)
         self.queryOwnerInfoTool = ALKISOwnerInfo(self)
         self.queryOwnerInfoTool.setAction(self.queryOwnerAction)
 
-        self.clearAction = QAction(QIcon("alkis:clear.svg"), "Hervorhebungen entfernen", self.iface.mainWindow())
+        self.clearAction = QAction(QIcon("alkis:clear.svg"), "ALKIS: Hervorhebungen entfernen", self.iface.mainWindow())
         self.clearAction.setWhatsThis("Hervorhebungen entfernen")
         self.clearAction.setStatusTip("Hervorhebungen entfernen")
         self.clearAction.triggered.connect(self.clearHighlight)
@@ -1194,6 +1216,55 @@ class alkisplugin(QObject):
     def search(self):
         dlg = ALKISSearch(self)
         dlg.exec()
+
+    def exportHighlightedAsXlsx(self):
+        # FileSave dialog
+        today = datetime.datetime.now()
+        todaystr = f"{today.strftime("%Y")}{today.strftime("%m")}{today.strftime("%d")}"
+        userprofiledir = os.getenv("userprofile")
+
+        dialogOptions = QFileDialog.Options()
+        xlsxPath, _ = QFileDialog.getSaveFileName(None, "KKG Importverzeichnis auswählen...", f"{userprofiledir}\\{todaystr}_Import_Flurstueckdaten_KKG.xlsx", "Excel-Mappe XLSX(*.xlsx)", options=dialogOptions)
+        xlsxExporter = XLSXExporter(xlsxPath)
+
+        # Get data
+        (db, _) = self.opendb()
+
+        # Kataloge
+        kat_bundesland = Bundesland(db)
+        kat_regierungsbezirk = Regierungsbezirk(db)
+        kat_kreisregion = KreisRegion(db)
+        kat_gemeinde = Gemeinde(db)
+        kat_gemarkung = Gemarkung(db)
+        kat_dienststelle = Dienststelle(db)
+
+        selected = set(self.highlighted())
+
+        try:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+
+            for s in selected:
+                xlsxExporter.addFlurstueck(
+                    Flurstueck(
+                        s,
+                        db,
+                        kat_bundesland,
+                        kat_regierungsbezirk,
+                        kat_kreisregion,
+                        kat_gemeinde,
+                        kat_gemarkung,
+                        kat_dienststelle
+                    )
+                )
+
+        finally:
+            QApplication.restoreOverrideCursor()
+
+        xlsxExporter.save()
+
+        QMessageBox.information(None, "KKG Export", u"Export erfolgreich abgeschlossen.")
+
+        return
 
     def setScale(self, layer, d):
         if d['max'] is None and d['min'] is None:
@@ -1981,6 +2052,9 @@ class alkisplugin(QObject):
     def setQueryOwnerTool(self):
         self.iface.mapCanvas().setMapTool(self.queryOwnerInfoTool)
 
+    def setSelectPlotTool(self):
+        self.iface.mapCanvas().setMapTool(self.selectPlotTool)
+
     def register(self):
         edbsgen = self.iface.mainWindow().findChild(QObject, "EDBSQuery")
         if edbsgen:
@@ -2136,6 +2210,11 @@ class alkisplugin(QObject):
         self.iface.mapCanvas().refresh()
 
     def highlighted(self):
+        if self.areaMarkerLayer is None:
+            (layerId, ok) = QgsProject.instance().readEntry("alkis", "/areaMarkerLayer")
+            if ok:
+                self.areaMarkerLayer = self.mapLayer(layerId)
+
         if self.areaMarkerLayer is not None:
             m = re.search("layer='ax_flurstueck' AND gml_id IN \\('(.*)'\\)", self.areaMarkerLayer.subsetString())
             if m:
@@ -2203,7 +2282,14 @@ class alkisplugin(QObject):
             gmlids.add(e['gmlid'])
 
         if add:
-            gmlids = gmlids | set(self.highlighted())
+            highlighted = set(self.highlighted())
+            gmlids_copy = gmlids.copy()
+            for i in gmlids_copy:
+                if i in highlighted:
+                    highlighted.remove(i)
+                    gmlids.remove(i)
+
+            gmlids = gmlids | highlighted
 
         self.areaMarkerLayer.setSubsetString("layer='ax_flurstueck' AND gml_id IN ('" + "','".join(gmlids) + "')")
 

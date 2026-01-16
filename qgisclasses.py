@@ -8,6 +8,12 @@
     Date                 : May 2014
     Copyright            : (C) 2014-2025 by Jürgen Fischer
     Email                : jef at norbit dot de
+
+    Modifications:
+    ---------------------
+    Date                 : January 2026
+    Copyright            : (C) 2026 by Rico Brase
+    Email                : rico dot brase at lachendorf dot de
 ***************************************************************************
 *                                                                         *
 *   This program is free software; you can redistribute it and/or modify  *
@@ -1415,6 +1421,93 @@ th { text-align:left;}
 
         return res[0]['alb_key']
 
+class ALKISSelectPlotTool(QgsMapTool):
+    def __init__(self, plugin):
+        QgsMapTool.__init__(self, plugin.iface.mapCanvas())
+        self.plugin = plugin
+        self.iface = plugin.iface
+        self.cursor = QCursor(QPixmap([
+            "16 16 3 1",
+            "      c None",
+            ".     c #FF0000",
+            "+     c #FFFFFF",
+            "                ",
+            "       +.+      ",
+            "      ++.++     ",
+            "     +.....+    ",
+            "    +.     .+   ",
+            "   +.   .   .+  ",
+            "  +.    .    .+ ",
+            " ++.    .    .++",
+            " ... ...+... ...",
+            " ++.    .    .++",
+            "  +.    .    .+ ",
+            "   +.   .   .+  ",
+            "   ++.     .+   ",
+            "    ++.....+    ",
+            "      ++.++     ",
+            "       +.+      "
+        ]))
+
+        self.areaMarkerLayer = None
+
+    def canvasPressEvent(self, e):
+        if self.areaMarkerLayer is None:
+            (layerId, ok) = QgsProject.instance().readEntry("alkis", "/areaMarkerLayer")
+            if ok:
+                self.areaMarkerLayer = self.plugin.mapLayer(layerId)
+
+        if self.areaMarkerLayer is None:
+            QMessageBox.warning(None, "ALKIS", u"Fehler: Flächenmarkierungslayer nicht gefunden!")
+
+    
+    def canvasReleaseEvent(self, e):
+        if hasattr(e, "mapPoint"):
+            point = e.mapPoint()
+        else:
+            point = self.iface.mapCanvas().getCoordinateTransform().toMapCoordinates(e.x(), e.y())
+
+        point = self.plugin.transform(point)
+
+        p = "POINT(%.3lf %.3lf)" % (point.x(), point.y())
+
+        try:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+
+            fs = self.plugin.retrieve(u"st_contains(wkb_geometry,st_geomfromtext('{}'::text,{}))".format(
+                p, self.plugin.getepsg()
+            ))
+
+            if not self.plugin.logQuery("eigentuemerInfo", p, [i['flsnr'] for i in fs]):
+                QMessageBox.information(None, u"Hinweis", u"Flurstücke werden ohne Protokollierung nicht angezeigt.")
+                return
+
+            if len(fs) == 0:
+                QMessageBox.information(None, u"Hinweis", u"Kein Flurstück gefunden.")
+                return
+
+            fs = self.plugin.highlight(fs=fs, zoomTo=False, add=True)
+
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    
+    def flsnr(self, gml_id):
+        if not isinstance(gml_id, str) or len(gml_id) != 16:
+            qDebug("gml_id erwartet [{}:{}]".format(len(gml_id), gml_id))
+            return None
+
+        (db, conninfo) = self.plugin.opendb()
+        if db is None:
+            qDebug("keine Datenbankverbindung")
+            return None
+
+        res = self.fetchall(db, "SELECT alb_key FROM fs WHERE fs_obj='{}'".format(gml_id))
+        if len(res) != 1:
+            qDebug("Kein eindeutiges Flurstück gefunden")
+            return None
+
+        return res[0]['alb_key']
 
 @qgsfunction(group='ALKIS')
 def flsnr(value):

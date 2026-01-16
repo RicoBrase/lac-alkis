@@ -7,6 +7,12 @@
     Date                 : September 2012
     Copyright            : (C) 2012-2025 by Jürgen Fischer
     Email                : jef at norbit dot de
+
+    Modifications:
+    ---------------------
+    Date                 : January 2026
+    Copyright            : (C) 2026 by Rico Brase
+    Email                : rico dot brase at lachendorf dot de
 ***************************************************************************
 *                                                                         *
 *   This program is free software; you can redistribute it and/or modify  *
@@ -17,7 +23,6 @@
 ***************************************************************************
 """
 from __future__ import absolute_import
-
 
 def name():
     return u"ALKIS-Einbindung"
@@ -32,7 +37,7 @@ def qgisMinimumVersion():
     return "3.0"
 
 def authorName():
-    return u"Jürgen E. Fischer <jef@norbit.de>"
+    return u"Rico Brase <rico.brase@lachendorf.de>"
 
 def icon():
     return ":/plugins/alkis/logo.png"

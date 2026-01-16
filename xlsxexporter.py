@@ -1,0 +1,63 @@
+import xlsxwriter
+from .flurstueck import Flurstueck
+
+class XLSXExporter:
+    def __init__(self, path):
+        self._workbook = xlsxwriter.Workbook(path)
+        self._worksheet = self._workbook.add_worksheet()
+        self._fs_counter = 0
+
+        self._worksheet.write(0, 0, "Flurstückskennzeichen (ALB 4 stl.)")
+        self._worksheet.write(0, 1, "Flurstückskennzeichen (ALK 4 stl.)")
+        self._worksheet.write(0, 2, "Flurstückskennzeichen (ALB 3 stl.)")
+        self._worksheet.write(0, 3, "Flurstückskennzeichen (ALK 3 stl.)")
+        self._worksheet.write(0, 4, "Flurstückskennzeichen (ALKIS)")
+        self._worksheet.write(0, 5, "ALKIS_ObjektID")
+        self._worksheet.write(0, 6, "Bundesland")
+        self._worksheet.write(0, 7, "Regierungsbezirk")
+        self._worksheet.write(0, 8, "Landkreis")
+        self._worksheet.write(0, 9, "Gemeinde")
+        self._worksheet.write(0, 10, "Gemarkung")
+        self._worksheet.write(0, 11, "Flur")
+        self._worksheet.write(0, 12, "Flurstücksnummer")
+        self._worksheet.write(0, 13, "Katasteramt")
+        self._worksheet.write(0, 14, "Finanzamt")
+        self._worksheet.write(0, 15, "Forstamt")
+        self._worksheet.write(0, 16, "amtliche Fläche m²")
+        self._worksheet.write(0, 17, "Objektkoordinate X")
+        self._worksheet.write(0, 18, "Objektkoordinate Y")
+        self._worksheet.write(0, 19, "unverschl. Lagebezeichnung")
+        self._worksheet.write(0, 20, "Straße Hausnummer")
+        self._worksheet.write(0, 21, "Hinweis")
+        self._worksheet.write(0, 22, "Entstehung")
+        self._worksheet.write(0, 23, "Lebenszeitintervall beginnt")
+        self._worksheet.write(0, 24, "Lebenszeitintervall endet")
+        self._worksheet.write(0, 25, "Vorgängerflurstück")
+        self._worksheet.write(0, 26, "Nachfolgerflurstück")
+        self._worksheet.write(0, 27, "Nutzung")
+        self._worksheet.write(0, 28, "Klassifizierung")
+        self._worksheet.write(0, 29, "Bodenschätzung")
+        self._worksheet.write(0, 30, "Bewertung")
+        self._worksheet.write(0, 31, "Eigentum")
+
+    def addFlurstueck(self, fs: Flurstueck):
+        self._fs_counter = self._fs_counter + 1
+
+        self._worksheet.write(self._fs_counter, 0, fs.kennzeichenALB4stl())
+        self._worksheet.write(self._fs_counter, 1, fs.kennzeichenALK4stl())
+        # columns 2 and 3 stay empty
+        self._worksheet.write(self._fs_counter, 4, fs.kennzeichenALKIS())
+        self._worksheet.write(self._fs_counter, 5, fs.gml_id())
+        self._worksheet.write(self._fs_counter, 6, fs.bundesland())
+        self._worksheet.write(self._fs_counter, 7, fs.regierungsbezirk())
+        self._worksheet.write(self._fs_counter, 8, fs.kreisregion())
+        self._worksheet.write(self._fs_counter, 9, fs.gemeinde())
+        self._worksheet.write(self._fs_counter, 10, fs.gemarkung())
+        self._worksheet.write(self._fs_counter, 11, fs.flurnummer())
+        self._worksheet.write(self._fs_counter, 12, fs.flurstuecksnummer())
+        self._worksheet.write(self._fs_counter, 13, fs.katasteramt())
+
+        pass
+
+    def save(self):
+        self._workbook.close()

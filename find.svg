@@ -493,7 +493,7 @@
      style="display:inline"
      transform="translate(0,-8)">
     <rect
-       style="fill:#00ff00;fill-opacity:1;fill-rule:nonzero;stroke:none"
+       style="fill:transparent;fill-opacity:0;fill-rule:nonzero;stroke:none"
        id="rect7002"
        width="24"
        height="24"
