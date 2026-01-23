@@ -45,7 +45,8 @@ class XLSXExporter:
 
         self._worksheet.write(self._fs_counter, 0, fs.kennzeichenALB4stl())
         self._worksheet.write(self._fs_counter, 1, fs.kennzeichenALK4stl())
-        # columns 2 and 3 stay empty
+        self._worksheet.write(self._fs_counter, 2, fs.kennzeichenALB3stl())
+        self._worksheet.write(self._fs_counter, 3, fs.kennzeichenALK3stl())
         self._worksheet.write(self._fs_counter, 4, fs.kennzeichenALKIS())
         self._worksheet.write(self._fs_counter, 5, fs.gml_id())
         self._worksheet.write(self._fs_counter, 6, fs.bundesland())
@@ -56,6 +57,24 @@ class XLSXExporter:
         self._worksheet.write(self._fs_counter, 11, fs.flurnummer())
         self._worksheet.write(self._fs_counter, 12, fs.flurstuecksnummer())
         self._worksheet.write(self._fs_counter, 13, fs.katasteramt())
+        self._worksheet.write(self._fs_counter, 14, fs.finanzamt())
+        self._worksheet.write(self._fs_counter, 15, fs.forstamt())
+        self._worksheet.write(self._fs_counter, 16, fs.amtlicheflaeche())
+        self._worksheet.write(self._fs_counter, 17, fs.koordinate_x())
+        self._worksheet.write(self._fs_counter, 18, fs.koordinate_y())
+        self._worksheet.write(self._fs_counter, 19, fs.unverschluesselte_lagebezeichnung())
+        self._worksheet.write(self._fs_counter, 20, fs.strasse_hausnummer())
+        self._worksheet.write(self._fs_counter, 21, fs.hinweis())
+        self._worksheet.write(self._fs_counter, 22, fs.entstehung())
+        self._worksheet.write(self._fs_counter, 23, fs.lebenszeitintervall_beginnt())
+        self._worksheet.write(self._fs_counter, 24, fs.lebenszeitintervall_endet())
+        self._worksheet.write(self._fs_counter, 25, fs.vorgaengerflurstueck())
+        self._worksheet.write(self._fs_counter, 26, fs.nachfolgerflurstueck())
+        self._worksheet.write(self._fs_counter, 27, fs.nutzung())
+        self._worksheet.write(self._fs_counter, 28, fs.klassifizierung())
+        self._worksheet.write(self._fs_counter, 29, fs.bodenschaetzung())
+        self._worksheet.write(self._fs_counter, 30, fs.bewertung())
+        self._worksheet.write(self._fs_counter, 31, fs.eigentum())
 
         pass
 

@@ -112,7 +112,7 @@ if qgisAvailable:
 
     from .qgisclasses import About, ALKISPointInfo, ALKISPolygonInfo, ALKISOwnerInfo, ALKISSelectPlotTool, ALKISSearch, ALKISConf
     from .flurstueck import Flurstueck
-    from .kataloge import Bundesland, Regierungsbezirk, KreisRegion, Gemeinde, Gemarkung, Dienststelle
+    from .kataloge import Bundesland, Regierungsbezirk, KreisRegion, Gemeinde, Gemarkung, Dienststelle, Strassenlage
     from .xlsxexporter import XLSXExporter
 
 try:
@@ -1237,6 +1237,7 @@ class alkisplugin(QObject):
         kat_gemeinde = Gemeinde(db)
         kat_gemarkung = Gemarkung(db)
         kat_dienststelle = Dienststelle(db)
+        kat_strassenlage = Strassenlage(db)
 
         selected = set(self.highlighted())
 
@@ -1253,7 +1254,8 @@ class alkisplugin(QObject):
                         kat_kreisregion,
                         kat_gemeinde,
                         kat_gemarkung,
-                        kat_dienststelle
+                        kat_dienststelle,
+                        kat_strassenlage
                     )
                 )
 

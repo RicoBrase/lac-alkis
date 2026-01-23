@@ -186,3 +186,27 @@ class Dienststelle:
         if bezeichnung == None:
             return "Undefinierte Dienststelle"
         return bezeichnung    
+    
+class Strassenlage:
+
+    query_str = u"SELECT lage, bezeichnung FROM ax_lagebezeichnungkatalogeintrag;"
+
+    def __init__(self, db: QSqlDatabase):
+        query = QSqlQuery(db)
+        query.exec(self.query_str)
+
+        record = query.record()
+
+        self._map = {}
+
+        while query.next():
+            lage = query.value(record.indexOf("lage"))
+            bezeichnung = query.value(record.indexOf("bezeichnung"))
+            self._map.update({lage: bezeichnung})
+
+    def bezeichnungFromLage(self, lage: str):
+        bezeichnung: str = self._map.get(lage)
+        if bezeichnung == None:
+            return "Undefinierte Strassenlage"
+        return bezeichnung    
+    
