@@ -5,6 +5,15 @@ except ImportError:
 
 from .kataloge import Bundesland, Regierungsbezirk, KreisRegion, Gemeinde, Gemarkung, Dienststelle, Strassenlage
 
+class FlurstueckNutzung:
+    def __init__(self, schluessel: str, bezeichnung: str, flaeche: int):
+        self._schluessel = schluessel
+        self._bezeichnung = bezeichnung
+        self._flaeche = flaeche
+
+    def getExportText(self):
+        return f"({self._schluessel.replace(":", "-")}) {self._bezeichnung} {self._flaeche} m²"
+
 class Flurstueck:
 
     query_fields = [
@@ -28,6 +37,7 @@ class Flurstueck:
     query_str = u"SELECT {0} FROM ax_flurstueck WHERE endet IS NULL AND gml_id = '{1}' LIMIT 1;"
     geometry_query_str = u"SELECT st_x(point), st_y(point) FROM (SELECT st_centroid(line) as point FROM public.po_lines WHERE gml_id = '{0}');"
     housenumber_query_str = u"SELECT lage, hausnummer FROM ax_lagebezeichnungmithausnummer WHERE gml_id = '{0}';"
+    nutzung_query_str = u"SELECT flsnr, nutzsl as schluessel, fl as flaeche, nutzung FROM public.nutz_21 JOIN nutz_shl ON nutz_21.nutzsl = nutz_shl.nutzshl WHERE flsnr = '{0}';"
 
     def __init__(self, gmlid, db: QSqlDatabase, bundesland: Bundesland, regierungsbezirk: Regierungsbezirk, kreisregion: KreisRegion, gemeinde: Gemeinde, gemarkung: Gemarkung, dienststelle: Dienststelle, strassenlage: Strassenlage):
 
@@ -88,10 +98,28 @@ class Flurstueck:
             print(query.lastQuery())
             print(query.lastError().text())
 
+        # Nutzung
+        query.exec(self.nutzung_query_str.format(self.kennzeichenNutzung()))
+        record = query.record()
+
+        self._nutzung: list[FlurstueckNutzung] = []
+
+        while query.next():
+            fs_nutz: FlurstueckNutzung = FlurstueckNutzung(
+                str(query.value(record.indexOf("schluessel"))).strip(),
+                str(query.value(record.indexOf("nutzung"))).strip(),
+                int(query.value(record.indexOf("flaeche")))
+            )
+
+            self._nutzung.append(fs_nutz)
+
 
     def gml_id(self):
         return self._gml_id
     
+    def kennzeichenNutzung(self):
+        return f"{self._land:02d}{self._gemarkungsnummer:04d}-{self._flurnummer:03d}-{self._zaehler:05d}/{self._nenner:03d}"
+
     def kennzeichenALB4stl(self):
         return f"{self._land:02d}{self._gemarkungsnummer:04d}-{self._flurnummer:03d}-{self._zaehler:04d}/{self._nenner:04d}.00"
     
@@ -177,7 +205,11 @@ class Flurstueck:
         return f""
     
     def nutzung(self):
-        return f""
+        nutz_entries = ""
+        for fs_nutz in self._nutzung:
+            nutz_entries += fs_nutz.getExportText() + "\n"
+
+        return nutz_entries.strip()
     
     def klassifizierung(self):
         return f""
